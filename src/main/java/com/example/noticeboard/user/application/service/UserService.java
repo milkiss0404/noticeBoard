@@ -40,13 +40,14 @@ public class UserService implements UserDetailsService {
         return userRepository.createUser(userEntity);
     }
 
-    public void login(RequestUserDto request) throws LoginException {
+    public UserEntity login(RequestUserDto request) throws LoginException {
         UserEntity user = userRepository.findByUserName(request.userName())
                 .orElseThrow(() -> new LoginException("없는 아이디"));
 
         if (!passwordEncoder.matches(request.passwd(), user.getPasswd())) {
             throw new LoginException("틀린 비밀번호");
         }
+        return user;
 
     }
 

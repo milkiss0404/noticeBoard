@@ -1,7 +1,9 @@
 package com.example.noticeboard.common;
 
+import com.example.noticeboard.common.redis.RedisService;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
 import org.springframework.stereotype.Component;
@@ -16,15 +18,18 @@ import io.jsonwebtoken.JwtException;
 @Component
 public class JwtTokenProvider {
 
+    private final RedisService redisService;
     private final String secretKey;
     private final Key key;
+
 
     private final long accessTokenValidity = 1000 * 60 * 30;
     private final long refreshTokenValidity = 1000 * 60 * 60 * 24;
 
-    public JwtTokenProvider(@Value("${jwt.secret}") String secretKey) {
+    public JwtTokenProvider(@Value("${jwt.secret}") String secretKey,RedisService redisService) {
         this.secretKey = secretKey;
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
+        this.redisService = redisService;
     }
 
     public String createAccessToken(String userId) {
@@ -57,6 +62,11 @@ public class JwtTokenProvider {
     }
 
     public boolean isTokenValid(String token) {
+
+
+        if (redisService.getBlackList("blackList:%s".formatted(getUserId(token))) !=null) {
+            throw new RuntimeException("로그아웃된 토큰입니다");
+        }
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;

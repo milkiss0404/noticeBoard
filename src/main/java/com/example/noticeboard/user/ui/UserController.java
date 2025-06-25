@@ -2,6 +2,7 @@ package com.example.noticeboard.user.ui;
 
 import com.example.noticeboard.common.JwtTokenProvider;
 import com.example.noticeboard.common.Response;
+import com.example.noticeboard.common.redis.RedisService;
 import com.example.noticeboard.token.service.RefreshTokenService;
 import com.example.noticeboard.user.application.dtos.request.RequestUserDto;
 import com.example.noticeboard.user.application.dtos.response.ResponseUserDto;
@@ -38,7 +39,7 @@ public class UserController {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
     private final RefreshTokenService refreshTokenService;
-
+    private final RedisService redisService;
 
     @PostMapping("/join")
     public Response<ResponseUserDto> createUser(@RequestBody RequestUserDto dto) {
@@ -48,9 +49,10 @@ public class UserController {
 
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody RequestUserDto request, HttpServletResponse response) throws LoginException {
+    public Response<String> login(@RequestBody RequestUserDto request, HttpServletResponse response) throws LoginException {
 
-        userService.login(request);
+            UserEntity userEntity = userService.login(request);
+
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.userName(), request.passwd())
@@ -64,8 +66,9 @@ public class UserController {
 
         String accessToken = jwtTokenProvider.createAccessToken(username);
         String refreshToken = jwtTokenProvider.createRefreshToken(username);
-
-        refreshTokenService.save(username, refreshToken);
+        String key = "refreshToken:userId %s".formatted(userEntity.getUsername());
+        redisService.saveData(key,refreshToken);
+//        refreshTokenService.save(username, refreshToken);
 
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken)
                 .httpOnly(true)
@@ -73,8 +76,6 @@ public class UserController {
                 .sameSite("Strict")
                 .path("/")
                 .build();
-
-
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
                 .secure(true)
@@ -86,7 +87,7 @@ public class UserController {
         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
 
-        return ResponseEntity.ok("로그인 성공");
+        return Response.ok("로그인 성공");
     }
 
     @PostMapping("/refresh")
