@@ -1,4 +1,4 @@
-#클린아키텍처
+# 클린아키텍처
 ---
 클린 아키텍처란 무엇인가, 그리고 왜 중요한가?<br>
 소프트웨어 아키텍처에서 중요한 요소 중 하나는 비용 절감입니다<br>
@@ -8,7 +8,7 @@
 예를 들어, 비즈니스 로직을 작성했을 때 이를 다양한 환경( ex: 웹, 콘솔 ,  다른 DB)에 쉽게 이식할수 있어야 한다<br>
 이러한 유연함은 곧 클린 아키텍쳐의 핵심입니다<br>
 ---
-##고수준과 저수준 컴포넌트의 분리<br>
+## 고수준과 저수준 컴포넌트의 분리<br>
 클린 아키텍처에서는 컴포넌트를 다음과 같이 분류할수있음<br>
 고수준 컴포넌트: 비즈니스로직을 담당( ex: 서비스 레어이, 도메인 레이어)<br>
 저수준 컴포넌트: 외부와 가까움 기술적인 부불을 담당(ex: 컨드롤러 ,DB레파지토리)<br>
@@ -50,18 +50,18 @@ RepositoryImpl 부분은 데이터 접근이라는 하나의 책임만 수행하
 
 
 
-#ERD
+# ERD
 ---
 ![image.png](attachment:890009a9-7169-4243-a0c9-decc1e99ffbe:image.png)
 
-#API Spec
+# API Spec
 ---
 ![image.png](attachment:5e557195-f73b-4ebd-84cd-0c6cc7fb23ae:image.png)<br>
 ![image.png](attachment:876108a6-75bf-4712-beef-64698bf51c1c:image.png)<br>
 ![image.png](attachment:780f8df0-a7cf-4aef-9041-74a83451423d:image.png)<br>
 
 
-#게시물 생성 API
+# 게시물 생성 API
 
 ### Endpoint
 ``` http request
