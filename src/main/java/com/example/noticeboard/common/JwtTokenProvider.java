@@ -1,9 +1,12 @@
 package com.example.noticeboard.common;
 
+import com.example.noticeboard.common.exception.CustomBadRequestException;
 import com.example.noticeboard.common.redis.RedisService;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
 import org.springframework.stereotype.Component;
@@ -52,19 +55,22 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String getUserId(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+    public String getUserIdAndIsValid(String token) throws CustomBadRequestException {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getSubject();
+        } catch (Exception e) {
+            throw new CustomBadRequestException("토큰이 유효하지 않습니다.");
+        }
     }
 
-    public boolean isTokenValid(String token) {
-
-
-        if (redisService.getBlackList("blackList:%s".formatted(getUserId(token))) !=null) {
+    @SneakyThrows
+    public boolean isBlackList(String token) {
+        if (redisService.getBlackList("blackList:%s".formatted(getUserIdAndIsValid(token))) !=null) {
             throw new RuntimeException("로그아웃된 토큰입니다");
         }
         try {

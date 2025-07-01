@@ -1,5 +1,6 @@
 package com.example.noticeboard.comment.repository.entity;
 
+import com.example.noticeboard.comment.application.dto.RequestCommentEdit;
 import com.example.noticeboard.common.BaseEntity;
 import com.example.noticeboard.post.repository.entity.PostEntity;
 import com.example.noticeboard.user.repository.entity.UserEntity;
@@ -34,5 +35,9 @@ public class CommentEntity extends BaseEntity {
         this.user = user;
         this.post = post;
         this.content = content;
+    }
+
+    public void Edit(RequestCommentEdit dto) {
+        this.content = dto.content();
     }
 }

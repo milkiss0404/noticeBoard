@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -22,5 +23,10 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public Optional<UserEntity> findByUserName(String userName) {
         return jpaUserRepository.findByUsername(userName);
+    }
+
+    @Override
+    public List<UserEntity> findAll() {
+        return jpaUserRepository.findAll();
     }
 }

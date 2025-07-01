@@ -1,5 +1,6 @@
 package com.example.noticeboard.post.application.service;
 
+import com.example.noticeboard.common.exception.CustomBadRequestException;
 import com.example.noticeboard.post.application.dtos.RequestPostSave;
 import com.example.noticeboard.post.domain.PostStatus;
 import com.example.noticeboard.post.repository.JpaPostRepository;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -52,13 +54,11 @@ public class PostService {
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public PostEntity editPost(RequestPostEdit dto) {
 
-        UserEntity userEntity = getUserEntity(dto.userId());
-
         PostEntity post = findPost(dto.postId());
-
-        extracted(userEntity, post);
-
+        getPostEntity(dto.postId());
         comparisonPasswd(dto.passwd(), post);
+//        extracted(dto.userId(), post);
+
         post.edit(
                 enCordingPasswd(dto.passwd()),
                 dto.title(),
@@ -72,19 +72,27 @@ public class PostService {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public void removePost(Long postId, RequestPostDelete dto) {
-        PostEntity post = findPost(postId);
-        extracted(post.getUser(), post);
+        PostEntity post = getPostEntity(postId);
+//        extracted(dto.userId(), post);
         comparisonPasswd(dto.passwd(), post);
         jpaPostRepository.delete(post);
     }
 
-    private static void extracted(UserEntity userEntity, PostEntity post) {
-        if (userEntity.getRole() != UserRole.ADMIN) {
-            if (!post.getUser().getId().equals(userEntity.getId())) {
-                throw new IllegalArgumentException("이 글의 작성자 혹은 관리자만 수정할수있습니다");
-            }
+    private PostEntity getPostEntity(Long postId) {
+        PostEntity post = findPost(postId);
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        String postUsername = post.getUser().getUsername();
+        if (!userName.equals(postUsername)) {
+            throw new CustomBadRequestException("작성자만 삭제/수정할 수 있습니다");
         }
+        return post;
     }
+
+//    private static void extracted(Long userId, PostEntity post) {
+//            if (!post.getUser().getId().equals(userId)) {
+//                throw new CustomBadRequestException("작성자만 삭제/수정할 수 있습니다");
+//            }
+//    }
 
     private String enCordingPasswd(String passwd) {
         return passwordEncoder.encode(passwd);

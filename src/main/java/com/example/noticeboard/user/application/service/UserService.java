@@ -1,5 +1,6 @@
 package com.example.noticeboard.user.application.service;
 
+import com.example.noticeboard.common.exception.CustomBadRequestException;
 import com.example.noticeboard.user.application.dtos.request.RequestUserDto;
 import com.example.noticeboard.user.domain.UserRole;
 import com.example.noticeboard.user.domain.interfaces.UserRepository;
@@ -30,7 +31,7 @@ public class UserService implements UserDetailsService {
     @Transactional
     public UserEntity createUser(@Valid RequestUserDto dto) {
         if (userRepository.findByUserName(dto.userName()).isPresent()) {
-            throw new IllegalArgumentException("존재하는 회원입니다");
+            throw new CustomBadRequestException("중복된 username 입니다");
         }
         UserEntity userEntity = UserEntity.builder()
                 .username(dto.userName())
@@ -40,12 +41,12 @@ public class UserService implements UserDetailsService {
         return userRepository.createUser(userEntity);
     }
 
-    public UserEntity login(RequestUserDto request) throws LoginException {
+    public UserEntity login(RequestUserDto request) throws CustomBadRequestException {
         UserEntity user = userRepository.findByUserName(request.userName())
-                .orElseThrow(() -> new LoginException("없는 아이디"));
+                .orElseThrow(() -> new CustomBadRequestException("회원을 찾을 수 없습니다"));
 
         if (!passwordEncoder.matches(request.passwd(), user.getPasswd())) {
-            throw new LoginException("틀린 비밀번호");
+            throw new CustomBadRequestException("회원을 찾을 수 없습니다");
         }
         return user;
 
@@ -71,5 +72,9 @@ public class UserService implements UserDetailsService {
                 user.getPasswd(),
                 authorities
         );
+    }
+
+    public List<UserEntity> getAllUser() {
+        return userRepository.findAll();
     }
 }

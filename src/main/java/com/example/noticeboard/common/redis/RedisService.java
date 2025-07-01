@@ -51,7 +51,6 @@ public class RedisService {
     }
 
     public void setBlackList(String key, String value, Long minutes) {
-        redisTemplate.setValueSerializer(new StringRedisSerializer());
         redisTemplate.opsForValue().set(key, value, minutes, TimeUnit.MINUTES);
     }
 }
