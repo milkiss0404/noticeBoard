@@ -1,3 +1,94 @@
+# 1. 왜 블랙리스트 로그아웃이 필요한가?
+JWT는 Stateless 구조이기 때문에 한 번 발급된 토큰은 만료되기 전까지 서버가 강제로 폐기할 수 없다.
+
+
+따라서 로그아웃 시 다음과 같은 문제가 발생 할 수 있다
+
+
+단순히 프론트에서 로컬스토리지/쿠키를 지우는 것은 보안상 완전한 로그아웃이 아님.
+
+
+악의적인 사용자가 토큰을 복사해 두었다면 재사용 가능.
+
+
+이를 막기 위해선 서버에서 강제로 토큰을 무효화시킬 방법이 필요함 → 레디스 TTL을 이용한 블랙리스트 방식 사용.
+
+
+# 2. 왜 Redis를 RefreshToken 저장소로 사용했나?
+Redis는 인메모리 기반 저장소이기 때문에 I/O 부하가 적고 조회 속도가 빠름.
+
+
+블랙리스트 조회는 매 요청마다 Filter에서 수행되므로, 성능이 중요.
+
+
+일반 RDBMS에 저장하면 I/O 병목 발생 가능성 있음.
+
+## StringRedisTemplate 을이용한 로그인시 RefreshToken 키값save
+```
+    @Operation(summary = "로그인")
+    @PostMapping("/login")
+    public Response<String> login(@RequestBody RequestUserDto request, HttpServletResponse response) throws LoginException {
+
+        UserEntity userEntity = userService.login(request);
+
+
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.userName(), request.passwd())
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+
+        String username = userDetails.getUsername();
+
+        String accessToken = jwtTokenProvider.createAccessToken(username);
+        String refreshToken = jwtTokenProvider.createRefreshToken(username);
+        String key = "refreshToken:userId %s".formatted(userEntity.getUsername());
+        redisService.saveData(key, refreshToken);
+```
+
+## 로그아웃시 블랙리스트처리(redis TTL을 이용)
+
+```
+@RequiredArgsConstructor
+@Component
+public class LogoutHandlerImpl implements LogoutHandler {
+
+    private final JwtTokenProvider jwtTokenProvider;
+    private final JpaRefreshTokenRepository jpaRefreshTokenRepository;
+    private final RedisService redisService;
+
+    @SneakyThrows // 체크 예외(checked exception)를 명시적으로 선언하거나 try-catch 없이 던질 수 있게 해줌
+    @Transactional
+    @Override
+    public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+        String token = jwtTokenProvider.resolveToken(request);
+        String userId = jwtTokenProvider.getUserIdAndIsValid(token);
+        if (jwtTokenProvider.isBlackList(token)) {
+            response.setStatus(400);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("토큰이 유효하지 않습니다");
+        }
+
+        String blackListKey = "blackList:%s".formatted(userId);
+        redisService.setBlackList(blackListKey, token, 30L);
+
+        String key = "refreshToken:userId %s".formatted(userId);
+        redisService.deleteData(key);
+//            jpaRefreshTokenRepository.deleteByUserId((userId));
+    }
+}
+```
+
+
+```
+    public void setBlackList(String key, String value, Long minutes) {
+        redisTemplate.opsForValue().set(key, value, minutes, TimeUnit.MINUTES);
+    }
+```
+
+
 # 클린아키텍처
 ---
 클린 아키텍처란 무엇인가, 그리고 왜 중요한가?
@@ -291,4 +382,111 @@ value: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyMjIyMiIsImlhdCI6MTc1MTI5Mzg2OCwiZ
     }
 }
 ```
+
+
+# 스프링시큐리티 jwt필터로 작성자 회원 인증하는법
+---
+
+RequestDTO로 userId를 받았던 방식에서 리팩터링을 하였습니다 jwtAhthenticationFilter를 UsernamePasswordAuthenticationFilter앞에 붙여주면서
+
+
+access 토큰 검증이후에 SecurityContextHolder에 userId를 넣어준다 서비스레이어에서는 SecurityContextHolder.getContext().getAuthentication().getName()에서 인증된사용자 이름과
+
+
+PostEntity 혹은 CommentEntity 내에 UserEntity의 userName과 비교해 작성자 확인을 한다
+
+```
+.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+```
+
+
+```
+ public String getUserIdAndIsValid(String token) throws CustomBadRequestException {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getSubject();
+        } catch (Exception e) {
+            throw new CustomBadRequestException("토큰이 유효하지 않습니다.");
+        }
+    }
+```
+
+```
+
+ @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
+
+        try {
+            String token = getToken(request);
+            jwtTokenProvider.isBlackList(token);
+
+            String userId = jwtTokenProvider.getUserIdAndIsValid(getToken(request));
+            var userDetails = userDetailService.loadUserByUsername(userId);
+            Authentication auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(auth);
+
+        } catch (CustomBadRequestException e) {
+            sendErrorResponse(response, "토큰이 유효하지 않습니다");
+            return;
+        } catch (Exception e) {
+            sendErrorResponse(response, "회원을 찾을 수 없습니다");
+            return;
+        }
+        filterChain.doFilter(request,response);
+    }
+
+
+```
+
+PostEntity 일경우 예시
+
+```
+   private PostEntity getPostEntity(Long postId) {
+        PostEntity post = findPost(postId);
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        String postUsername = post.getUser().getUsername();
+        if (!userName.equals(postUsername)) {
+            throw new CustomBadRequestException("작성자만 삭제/수정할 수 있습니다");
+        }
+        return post;
+    }
+```
+
+
+
+# 예외처리
+---
+CustomBadRequestException를 만들어서 일괄 처리하였습니다.
+
+```
+
+@ControllerAdvice
+public class CustomExceptionHandler {
+
+        @ResponseBody
+        @ExceptionHandler(CustomBadRequestException.class)
+        public ResponseEntity<String> handleCustomBadRequestException(CustomBadRequestException ex) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        }
+}
+
+public class CustomBadRequestException extends RuntimeException{
+    public CustomBadRequestException(String message) {
+        super(message);
+    }
+}
+
+ throw new CustomBadRequestException("토큰이 유효하지 않습니다.");
+
+```
+
+
+
 
