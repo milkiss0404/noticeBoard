@@ -53,13 +53,16 @@ RepositoryImpl 부분은 데이터 접근이라는 하나의 책임만 수행하
 
 # ERD
 ---
-![image.png](attachment:890009a9-7169-4243-a0c9-decc1e99ffbe:image.png)
+![erd](https://github.com/user-attachments/assets/f6ffcfef-7920-4003-bb5a-9ea0f7df9a3f)
+
 
 # API Spec
 ---
-![image.png](attachment:5e557195-f73b-4ebd-84cd-0c6cc7fb23ae:image.png)<br>
-![image.png](attachment:876108a6-75bf-4712-beef-64698bf51c1c:image.png)<br>
-![image.png](attachment:780f8df0-a7cf-4aef-9041-74a83451423d:image.png)<br>
+![swagger](https://github.com/user-attachments/assets/c56d24c8-a9f3-4316-8b9b-a268d3464205)
+![swagger1](https://github.com/user-attachments/assets/5e605ca7-aa09-462d-b419-99a12bd63978)
+![swagger2](https://github.com/user-attachments/assets/e02f89bd-1272-46ba-9eef-b89eb762140e)
+
+
 
 
 # 게시물 생성 API
