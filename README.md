@@ -465,8 +465,8 @@ PostEntity 일경우 예시
 ---
 CustomBadRequestException를 만들어서 일괄 처리하였습니다.
 
-```
 
+```
 @ControllerAdvice
 public class CustomExceptionHandler {
 
@@ -476,13 +476,20 @@ public class CustomExceptionHandler {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
         }
 }
+```
 
+
+```
 public class CustomBadRequestException extends RuntimeException{
     public CustomBadRequestException(String message) {
         super(message);
     }
 }
 
+```
+
+
+```
  throw new CustomBadRequestException("토큰이 유효하지 않습니다.");
 
 ```
