@@ -16,8 +16,9 @@
 왜냐 ! 저수준컴포넌트는 변화가 잦음,<br>
 예를 들어 게시판서비스에서 "글을 작성한다" 라는 핵심비즈니스로직은 잘안바뀝니다.<br>
 데이터베이스는 사용자수나 트래픽 증가에따라 캐싱을 도입하거나 테이블 구조가 바뀌는 등 잦은 변화가 발생합니다.<br>
-![레이어드 아키텍쳐2](images/layeredArchitecture2.png) <br>
-![레이어드 아키텍쳐1](images/layeredArchitecture.png)<br>
+![layeredArchitecture2](https://github.com/user-attachments/assets/33aef40a-1647-4c8c-869b-f1c81ee128a6)<br>
+![layeredArchitecture](https://github.com/user-attachments/assets/baf5dc72-621f-4138-882b-a3325c6cdb21)<br>
+
 이러한 구조는 SOLID원칙중 DIP 의존성 역전의 원칙을 반영한것입니다.<br>
 고수준 모듈이 저수준 모듈에 의존하는것이 아니라 공통의 추상화에 의존함으로써 변경에 강한 구조를 만듭니다.<br><br>
 
