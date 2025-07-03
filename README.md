@@ -24,7 +24,7 @@ Redis는 인메모리 기반 저장소이기 때문에 I/O 부하가 적고 조�
 일반 RDBMS에 저장하면 I/O 병목 발생 가능성 있음.
 
 ## StringRedisTemplate 을이용한 로그인시 RefreshToken 키값save
-```
+```java
     @Operation(summary = "로그인")
     @PostMapping("/login")
     public Response<String> login(@RequestBody RequestUserDto request, HttpServletResponse response) throws LoginException {
@@ -50,7 +50,7 @@ Redis는 인메모리 기반 저장소이기 때문에 I/O 부하가 적고 조�
 
 ## 로그아웃시 블랙리스트처리(redis TTL을 이용)
 
-```
+```java
 @RequiredArgsConstructor
 @Component
 public class LogoutHandlerImpl implements LogoutHandler {
@@ -82,7 +82,7 @@ public class LogoutHandlerImpl implements LogoutHandler {
 ```
 
 
-```
+```java
     public void setBlackList(String key, String value, Long minutes) {
         redisTemplate.opsForValue().set(key, value, minutes, TimeUnit.MINUTES);
     }
@@ -144,7 +144,7 @@ public class LogoutHandlerImpl implements LogoutHandler {
 고수준 모듈이 저수준 모듈에 의존하는것이 아니라 공통의 추상화에 의존함으로써 변경에 강한 구조를 만듭니다.
 
 
-```
+```java
 데이터 접근만 수행
 @Repository
 @RequiredArgsConstructor
@@ -395,12 +395,12 @@ access 토큰 검증이후에 SecurityContextHolder에 userId를 넣어준다 �
 
 PostEntity 혹은 CommentEntity 내에 UserEntity의 userName과 비교해 작성자 확인을 한다
 
-```
+```java
 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 ```
 
 
-```
+```java
  public String getUserIdAndIsValid(String token) throws CustomBadRequestException {
         try {
             return Jwts.parserBuilder()
@@ -415,7 +415,7 @@ PostEntity 혹은 CommentEntity 내에 UserEntity의 userName과 비교해 작�
     }
 ```
 
-```
+```java
 
  @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -466,7 +466,7 @@ PostEntity 일경우 예시
 CustomBadRequestException를 만들어서 일괄 처리하였습니다.
 
 
-```
+```java
 @ControllerAdvice
 public class CustomExceptionHandler {
 
@@ -479,7 +479,7 @@ public class CustomExceptionHandler {
 ```
 
 
-```
+```java
 public class CustomBadRequestException extends RuntimeException{
     public CustomBadRequestException(String message) {
         super(message);
@@ -489,7 +489,7 @@ public class CustomBadRequestException extends RuntimeException{
 ```
 
 
-```
+```java
  throw new CustomBadRequestException("토큰이 유효하지 않습니다.");
 
 ```
